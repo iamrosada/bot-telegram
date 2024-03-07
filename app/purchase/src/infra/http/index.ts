@@ -51,6 +51,28 @@ app.post("/purchases", async (request, response) => {
   }
 });
 
+app.post("/created-products", async (req, res) => {
+  try {
+    const { title } = req.body;
+
+    // Crie uma instância do repositório PrismaProductsRepository
+    const prismaProductsRepository = new PrismaProductsRepository();
+
+    // Chame o método create do repositório para criar um novo produto
+    const newProduct = await prismaProductsRepository.create(title);
+
+    // Se o produto for criado com sucesso, retorne uma resposta com o produto criado
+    if (newProduct) {
+      return res.status(201).json(newProduct);
+    } else {
+      // Caso contrário, retorne um erro
+      return res.status(500).json({ error: "Failed to create product" });
+    }
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 app.listen(process.env.PORT || 3333, () => {
   console.log("[Purchases] Server running");
 });

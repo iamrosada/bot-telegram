@@ -1,31 +1,105 @@
-version: '3'
+
+version: '3.8'
+
 services:
-  app:
-    build: 
-      context: ./app
+  classroom:
+    build:
+      context: ./app/classroom
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     depends_on:
       - rabbitmq
-    links:
-      - rabbitmq
+      - postgres_classroom
     environment:
-      - RABBITMQ_HOST=rabbitmq
-  postgres:
+      RABBITMQ_URL: "amqp://rabbitmq:5672"
+      DATABASE_URL: "postgresql://bot:bot@postgres_classroom:5432/classroom_db"
+
+  purchase:
+    build:
+      context: ./app/purchase
+      dockerfile: Dockerfile
+    ports:
+      - "3333:3333"
+    depends_on:
+      - postgres_purchase
+    environment:
+      RABBITMQ_URL: "amqp://rabbitmq:5672"
+      DATABASE_URL: "postgresql://bot:bot@postgres_purchase:5432/purchase_db"
+
+  postgres_classroom:
     image: postgres
-    container_name: postgres
+    container_name: postgres_classroom
     ports:
       - 6500:5432
     env_file:
-      - app/.env  
-    volumes:
-      - postgres:/var/lib/postgresql/data
+      - app/.env
+    environment:
+      POSTGRES_USER: bot
+      POSTGRES_PASSWORD: bot
+      POSTGRES_DB: classroom_db
+
+  postgres_purchase:
+    image: postgres
+    container_name: postgres_purchase
+    ports:
+      - 6501:5432
+    env_file:
+      - app/.env
+    environment:
+      POSTGRES_USER: bot
+      POSTGRES_PASSWORD: bot
+      POSTGRES_DB: purchase_db
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:management
     ports:
-      - "5672:5672"
-      - "15672:15672"
-volumes:
-  postgres:
+      - "5672:5672" # AMQP
+      - "15672:15672" # RabbitMQ management UI
+
+
+# version: '3.8'
+
+# services:
+#   classroom:
+#     build:
+#       context: ./app/classroom
+#       dockerfile: Dockerfile
+#     ports:
+#       - "3000:3000"
+#     depends_on:
+#       - rabbitmq
+#       - postgres
+#     environment:
+#       RABBITMQ_URL: "amqp://rabbitmq:5672"
+#       DATABASE_URL: "postgresql://bot:bot@postgres:6500/classroom_db"
+
+#   purchase:
+#     build:
+#       context: ./app/purchase
+#       dockerfile: Dockerfile
+#     ports:
+#       - "3333:3333"
+#     depends_on:
+#       - postgres
+#     environment:
+#       RABBITMQ_URL: "amqp://rabbitmq:5672"
+#       DATABASE_URL: "postgresql://bot:bot@postgres:6500/purchase_db"
+
+#   postgres:
+#     image: postgres
+#     container_name: postgres
+#     ports:
+#       - 6500:5432
+#     # env_file:
+#     # - app/.env
+#     # environment:
+#     #   POSTGRES_USER: bot
+#     #   POSTGRES_PASSWORD: bot
+#     #   POSTGRES_DB: bot_db
+
+#   rabbitmq:
+#     image: rabbitmq:management
+#     ports:
+#       - "5672:5672" # AMQP
+#       - "15672:15672" # RabbitMQ management UI

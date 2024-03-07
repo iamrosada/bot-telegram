@@ -179,6 +179,7 @@ async function handlePlanSelection(ctx: Context, plan: string) {
     );
     await sleep(15000); // Wait 15 seconds
     await ctx.reply(`Your ${plan} plan is now active!`);
+    await listProductsForPlan(ctx, plan);
   } else {
     await ctx.reply(`You are already on the ${plan} plan.`);
   }
@@ -187,7 +188,32 @@ async function handlePlanSelection(ctx: Context, plan: string) {
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+async function listProductsForPlan(ctx: Context, plan: string) {
+  try {
+    // Instanciando o repositório de produtos
+    const prismaProductsRepository = new PrismaProductsRepository();
 
+    // Obtendo a lista de produtos
+    let products = await prismaProductsRepository.list();
+
+    // Se o plano for "Free", incluir apenas o primeiro produto na lista
+    if (plan.toLowerCase() === "free" && products.length > 0) {
+      products = [products[0]];
+    }
+
+    // Formatando a lista de produtos para exibição
+    const productListText = products
+      .map((product) => `${product.title}`)
+      .join("\n");
+
+    // Enviando a lista de produtos ao usuário
+    await ctx.reply(`Products for ${plan} plan:\n${productListText}`);
+  } catch (error) {
+    console.error("Error listing products:", error);
+    // Tratar erros adequadamente
+    await ctx.reply("An error occurred while listing products.");
+  }
+}
 // Agora podemos lançar o bot em outro lugar do código ou em um arquivo separado
 bot.launch();
 

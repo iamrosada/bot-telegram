@@ -7,8 +7,10 @@ import { PrismaProductsRepository } from "../database/prisma/repositories/prisma
 import { PurchaseProduct } from "../../application/usecases/purchase-product";
 import { RabbitMQMessagingAdapter } from "../messaging/rabbitmq/adapters/rabbitmq-messaging-adapter";
 import { prisma } from "../database/prisma/prisma";
-import { Telegraf, Context } from "telegraf";
+import { Telegraf, Scenes, Context, Middleware } from "telegraf";
+
 import { PrismaPurchasesRepository } from "../database/prisma/repositories/prisma-purchases-repository";
+import { RabbitMQServer } from "../messaging/rabbitmq/rabbitmqserver";
 
 const app = express();
 
@@ -28,7 +30,6 @@ app.post("/products", handleCreateProduct);
 // Helper function to handle purchase
 async function handlePurchase(req: express.Request, res: express.Response) {
   const { productId, name, email } = req.body;
-
   // Repositories
   const prismaCustomersRepository = new PrismaCustomersRepository();
   const prismaProductsRepository = new PrismaProductsRepository();
@@ -71,8 +72,6 @@ async function handleCreateProduct(
     res.status(500).json({ error: "Internal server error" });
   }
 }
-
-// Bot initialization
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN || "");
 
@@ -139,6 +138,7 @@ async function handleUserOptions(ctx: Context) {
       },
     });
   });
+  //handlePurchaseCourse(ctx);
 
   bot.action("free_option", async (ctx: Context) => {
     if (ctx.callbackQuery) {
@@ -152,37 +152,6 @@ async function handleUserOptions(ctx: Context) {
       await handlePlanSelection(ctx, plan);
     }
   });
-}
-
-async function handlePlanSelection(ctx: Context, plan: string) {
-  await ctx.replyWithSticker(
-    "CAACAgIAAxkBAUKlF2XoPUIP_WasegbILrEf8yUlOBpWAAIZAAPp2BMoV2ES2mxgqss0BA"
-  );
-
-  const user = await prisma.user.findUnique({
-    where: { idTelegram: ctx.from?.id.toString() },
-    include: { plan: true },
-  });
-
-  if (user && user.plan.name !== plan) {
-    await prisma.user.update({
-      where: { idTelegram: ctx.from?.id.toString() },
-      data: {
-        plan: {
-          update: { name: plan },
-        },
-      },
-    });
-
-    await ctx.reply(
-      `Thank you for choosing the ${plan} plan. Activating your plan...`
-    );
-    await sleep(15000); // Wait 15 seconds
-    await ctx.reply(`Your ${plan} plan is now active!`);
-    await listProductsForPlan(ctx, plan);
-  } else {
-    await ctx.reply(`You are already on the ${plan} plan.`);
-  }
 }
 
 function sleep(ms: number) {
@@ -214,7 +183,133 @@ async function listProductsForPlan(ctx: Context, plan: string) {
     await ctx.reply("An error occurred while listing products.");
   }
 }
-// Agora podemos lançar o bot em outro lugar do código ou em um arquivo separado
+
+async function handlePlanSelection(ctx: Context, plan: string) {
+  await ctx.replyWithSticker(
+    "CAACAgIAAxkBAUKlF2XoPUIP_WasegbILrEf8yUlOBpWAAIZAAPp2BMoV2ES2mxgqss0BA"
+  );
+
+  const user = await prisma.user.findUnique({
+    where: { idTelegram: ctx.from?.id.toString() },
+    include: { plan: true },
+  });
+
+  if (user && user.plan.name !== plan) {
+    await prisma.user.update({
+      where: { idTelegram: ctx.from?.id.toString() },
+      data: {
+        plan: {
+          update: { name: plan },
+        },
+      },
+    });
+
+    await ctx.reply(
+      `Thank you for choosing the ${plan} plan. Activating your plan...`
+    );
+    await sleep(15000); // Wait 15 seconds
+    await ctx.reply(`Your ${plan} plan is now active!`);
+
+    // Listar produtos para o plano selecionado
+    await listProductsForPlan(ctx, plan);
+
+    // Adicionar botão de comprar curso para planos Advanced Plan e Basic Plan
+    await sleep(15000); // Wait 15 seconds
+
+    if (
+      plan.toLowerCase() === "advanced_plan" ||
+      plan.toLowerCase() === "basic_plan"
+    ) {
+      await ctx.reply(
+        "Would you like to purchase a course? Please provide your email.",
+        {
+          reply_markup: {
+            force_reply: true, // Força o usuário a responder diretamente a esta mensagem
+          },
+        }
+      );
+    }
+  } else {
+    await ctx.reply(`You are already on the ${plan} plan.`);
+  }
+
+  // Criar uma nova ação para capturar a resposta do usuário com o e-mail
+  bot.on("message", async (ctx: Context | any) => {
+    const prismaCustomersRepository = new PrismaCustomersRepository();
+    const prismaProductsRepository = new PrismaProductsRepository();
+    const prismaPurchasesRepository = new PrismaPurchasesRepository();
+
+    const rabbitMQMessagingAdapter = new RabbitMQMessagingAdapter(
+      process.env.RABBITMQ_URL || "amqp://localhost"
+    ); // Adicionado
+
+    const purchaseProductUseCase = new PurchaseProduct(
+      prismaCustomersRepository,
+      prismaProductsRepository,
+      prismaPurchasesRepository,
+      rabbitMQMessagingAdapter // Adicionado
+    );
+    const userResponse = ctx.message?.text;
+    // Verificar se a mensagem recebida é um e-mail válido
+    const isValidEmail = validateEmail(userResponse);
+    if (isValidEmail) {
+      let userName = ctx.from?.username || "";
+      let fullName = `${ctx.from?.first_name || ""} ${
+        ctx.from?.last_name || ""
+      }`;
+
+      // Construir o objeto de mensagem com o e-mail e o nome do usuário
+      const message = {
+        email: userResponse,
+        username: userName,
+        fullname: fullName,
+      };
+      const rabbitMQServer2 = new RabbitMQServer("amqp://localhost");
+
+      // Publicando uma mensagem na fila para enviar um e-mail de confirmação para o usuário
+      await rabbitMQServer2
+        .start()
+        .then(async () => {
+          // Publicando uma mensagem na primeira fila
+          const emailQueueName = "send.email";
+          await rabbitMQServer2.publish(emailQueueName, message);
+          console.log("Message published successfully to email queue.");
+        })
+        .catch((error) => {
+          console.error("Error starting RabbitMQ server 1:", error);
+        });
+
+      // Lógica de compra do curso para cada produto
+      const products = await prismaProductsRepository.list();
+      for (const product of products) {
+        await purchaseProductUseCase.execute({
+          name: fullName,
+          email: userResponse,
+          productId: product.id,
+        });
+
+        console.log(
+          `Purchase executed successfully for product ID: ${product.id}`
+        );
+      }
+
+      await ctx.reply(
+        `Thank you! Your email (${userResponse}) and name (${fullName}) have been received.`
+      );
+    } else {
+      await ctx.reply(
+        "Please provide a valid email address., for that go to choose and select again"
+      );
+    }
+  });
+}
+
+// Função para validar um endereço de e-mail simplesmente
+function validateEmail(email: string): boolean {
+  const re = /\S+@\S+\.\S+/;
+  return re.test(email);
+}
+
 bot.launch();
 
 // Start the server

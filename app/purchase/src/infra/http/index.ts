@@ -242,6 +242,7 @@ async function handlePlanSelection(ctx: Context, plan: string) {
     const rabbitMQMessagingAdapter = new RabbitMQMessagingAdapter(
       process.env.RABBITMQ_URL || "amqp://localhost"
     ); // Adicionado
+    // Publicando uma mensagem na primeira fila
 
     const purchaseProductUseCase = new PurchaseProduct(
       prismaCustomersRepository,
@@ -266,13 +267,13 @@ async function handlePlanSelection(ctx: Context, plan: string) {
         products: products.map((product) => product.title), // Adiciona os títulos dos produtos
       };
       const rabbitMQServer2 = new RabbitMQServer("amqp://localhost");
-
       // Publicando uma mensagem na fila para enviar um e-mail de confirmação para o usuário
       await rabbitMQServer2
         .start()
         .then(async () => {
           // Publicando uma mensagem na primeira fila
           const emailQueueName = "send.email";
+
           await rabbitMQServer2.publish(emailQueueName, message);
           console.log("Message published successfully to email queue.");
         })
@@ -312,9 +313,49 @@ function validateEmail(email: string): boolean {
 }
 
 bot.launch();
+let programmingCoursesCreated = false;
+
+async function createProgrammingCoursesOnce() {
+  if (!programmingCoursesCreated) {
+    try {
+      const prismaProductsRepository = new PrismaProductsRepository();
+
+      // Nomes dos cursos de programação em russo
+      const programmingCourses = [
+        "Полное веб-разработка",
+        "Введение в программирование на Python",
+        "Разработка приложений для Android",
+        "Полный курс по Java",
+        "Объектно-ориентированное программирование на C++",
+        "Разработка игр с использованием Unity",
+        "Машинное обучение и искусственный интеллект",
+        "Разработка веб-приложений с использованием React.js",
+        "Анализ данных с использованием Python и Pandas",
+        "Продвинутый курс по JavaScript и Node.js",
+      ];
+
+      // Cria 10 cursos de programação
+      for (const course of programmingCourses) {
+        await prismaProductsRepository.create(course);
+      }
+
+      console.log("Programming courses created successfully.");
+      programmingCoursesCreated = true;
+    } catch (error) {
+      console.error("Error creating programming courses:", error);
+    }
+  }
+}
 
 // Start the server
-const PORT = process.env.PORT || 3333;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// const PORT = process.env.PORT || 3333;
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });
+createProgrammingCoursesOnce().then(() => {
+  // Start the server after creating programming courses
+  const PORT = process.env.PORT || 3333;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });

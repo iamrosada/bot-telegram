@@ -238,7 +238,7 @@ async function handlePlanSelection(ctx: Context, plan: string) {
     const prismaCustomersRepository = new PrismaCustomersRepository();
     const prismaProductsRepository = new PrismaProductsRepository();
     const prismaPurchasesRepository = new PrismaPurchasesRepository();
-
+    const products = await prismaProductsRepository.list();
     const rabbitMQMessagingAdapter = new RabbitMQMessagingAdapter(
       process.env.RABBITMQ_URL || "amqp://localhost"
     ); // Adicionado
@@ -263,6 +263,7 @@ async function handlePlanSelection(ctx: Context, plan: string) {
         email: userResponse,
         username: userName,
         fullname: fullName,
+        products: products.map((product) => product.title), // Adiciona os títulos dos produtos
       };
       const rabbitMQServer2 = new RabbitMQServer("amqp://localhost");
 
@@ -280,7 +281,7 @@ async function handlePlanSelection(ctx: Context, plan: string) {
         });
 
       // Lógica de compra do curso para cada produto
-      const products = await prismaProductsRepository.list();
+
       for (const product of products) {
         await purchaseProductUseCase.execute({
           name: fullName,

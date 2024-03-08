@@ -1,0 +1,47 @@
+<div>
+  <p>Привет, {{ username }},</p>
+  <br />
+  <table
+    role="presentation"
+    class="main"
+    style="
+      font-family: Arial, sans-serif;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    "
+  >
+    <!-- START MAIN CONTENT AREA -->
+    <tr>
+      <td class="wrapper">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <h2 style="margin-bottom: 15px">
+                Добро пожаловать в
+                <strong class="company-name" style="color: #007bff"
+                  >BoostBLZ</strong
+                >!
+              </h2>
+              <p style="margin-bottom: 15px; line-height: 1.6">
+                Вы приобрели следующие товары:
+              </p>
+              <ul style="margin-bottom: 15px; line-height: 1.6">
+                {{#each products}}
+                <li>{{this}}</li>
+                {{/each}}
+              </ul>
+              <p style="margin-bottom: 15px; line-height: 1.6">
+                Спасибо за выбор нашего сервиса (by luis rosada)❤️.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <!-- END MAIN CONTENT AREA -->
+  </table>
+</div>

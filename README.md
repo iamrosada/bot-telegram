@@ -2,6 +2,14 @@
 
 А еще бот в Telegram называется
 `@botapirosada_bot`
+
+![telegram-cloud-photo-size-2-5429446503551851144-y](https://github.com/iamrosada/bot-telegram/assets/59142372/9787d17f-a1dc-467d-869b-e7a5c3918e23)
+![telegram-cloud-photo-size-2-5429446503551851145-y](https://github.com/iamrosada/bot-telegram/assets/59142372/3fbd6760-9015-4539-83a6-65bbb6d148be)
+
+![image](https://github.com/iamrosada/bot-telegram/assets/59142372/835f19e8-4117-4645-896e-326d081ce99f)
+
+
+
 # Classroom and Purchase Applications
 
 This repository contains two applications: Classroom and Purchase. The Classroom application is responsible for managing courses and user interactions, while the Purchase application handles purchases and transactions.

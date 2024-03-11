@@ -1,4 +1,7 @@
+Я увидел это совсем недавно, поэтому добавил .env в ветку `feat/add-sticker-on-mensagem` и надеюсь, что во время тестирования вы сможете его использовать.
 
+А еще бот в Telegram называется
+`@botapirosada_bot`
 # Classroom and Purchase Applications
 
 This repository contains two applications: Classroom and Purchase. The Classroom application is responsible for managing courses and user interactions, while the Purchase application handles purchases and transactions.

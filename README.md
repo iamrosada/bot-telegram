@@ -3,6 +3,16 @@
 А еще бот в Telegram называется
 `@botapirosada_bot`
 
+
+inside of .env file on branch feat/add-sticker-on-mensagem for use during testing. And the Telegram bot is named @botapirosada_bot.
+
+
+
+
+
+
+
+
 ![telegram-cloud-photo-size-2-5429446503551851144-y](https://github.com/iamrosada/bot-telegram/assets/59142372/9787d17f-a1dc-467d-869b-e7a5c3918e23)
 ![telegram-cloud-photo-size-2-5429446503551851145-y](https://github.com/iamrosada/bot-telegram/assets/59142372/3fbd6760-9015-4539-83a6-65bbb6d148be)
 
